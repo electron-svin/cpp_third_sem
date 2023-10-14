@@ -1,7 +1,9 @@
 #include <iostream>
+#include <cstring>
+#include  <algorithm>
+
+
 template <typename T>
-
-
 class Array {
 public:
 
@@ -12,26 +14,25 @@ public:
         }
     }
 
-    Array(const Array& other) {
-        m_size = other.m_size;
-        m_beg = new T[other.m_size];
-        for (size_t i = 0; i < other.m_size; i++) {
-            *(m_beg + i) = *(other.m_beg + i);
-        }
+    Array(const Array& other) : Array(other.m_size) {
+        std::memcpy(m_beg, other.m_beg, m_size * sizeof(T));
+        std::copy(other.m_beg, other.m_beg + other.m_size, m_beg);
     }
-
-    Array(Array&& other) {
-        m_size = other.m_size;
-        m_beg = other.m_beg;
+   
+    Array(Array&& other) noexcept : m_size(other.m_size), m_beg(other.m_beg) {
         other.m_size = 0;
         other.m_beg = nullptr;
     }
-
+    
     ~Array() {
         if (m_size == 0) { return; }
         delete[] m_beg;
     }
+
     Array& operator=(const Array& other) {
+        if (&other == this) {
+            return *this;
+        }
         Array tmp(other);
         std::swap(tmp.m_size, m_size);
         std::swap(tmp.m_beg, m_beg);
@@ -39,7 +40,16 @@ public:
     }
 
     Array& operator=(Array&& other) {
-        Array tmp = std::move(other);
+        if (&other == this) {
+            return *this;
+        }
+
+        delete[] m_beg;
+        size = other.size;
+        m_beg = other.m_beg;
+
+        other.size = 0;
+        other.m_beg = nullptr;
         return *this;
     }
 
@@ -63,14 +73,18 @@ public:
 
 private:
 
-    size_t m_size;
-    T* m_beg;
+    size_t m_size = 0;
+    T* m_beg = nullptr;
 };
 
 
 int main() {
     Array<int> tmp(5, 1);
-    std::cout << tmp.size() << std::endl;
+    int x = 42;
+    Array<int> a1(10, x);
+    Array<int> a2 = std::move(a1);
     tmp.print();
     return 0;
 }
+
+// valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=valgrind-out-1.txt ./array_1
