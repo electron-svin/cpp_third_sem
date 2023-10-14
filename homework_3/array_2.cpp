@@ -1,4 +1,6 @@
 ﻿#include<iostream>
+#include <cstring>
+#include  <algorithm>
 
 class S {
 public:
@@ -20,7 +22,7 @@ public:
         }
     }
 
-    Array(const Array& other) {
+    Array(const Array& other) : Array(other.m_size) {
         m_size = other.m_size;
         m_beg = new T[other.m_size];
         for (size_t i = 0; i < other.m_size; i++) {
@@ -28,9 +30,7 @@ public:
         }
     }
 
-    Array(Array&& other) {
-        m_size = other.m_size;
-        m_beg = other.m_beg;
+    Array(Array&& other) noexcept : m_size(other.m_size), m_beg(other.m_beg) {
         other.m_size = 0;
         other.m_beg = nullptr;
     }
@@ -47,7 +47,16 @@ public:
     }
 
     Array& operator=(Array&& other) {
-        Array tmp = std::move(other);
+        if (&other == this) {
+            return *this;
+        }
+
+        delete[] m_beg;
+        size = other.size;
+        m_beg = other.m_beg;
+
+        other.size = 0;
+        other.m_beg = nullptr;
         return *this;
     }
 
@@ -79,6 +88,11 @@ int main() {
 
     Array<int> tmp(5, 1);
     Array<S> tmp1(5, 1);
+    int x = 42;
+    Array<int> a1(10, x);
+    Array<int> a2 = std::move(a1);
     tmp.print();
     return 0;
 }
+
+// valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=valgrind-out-2.txt ./array_2
